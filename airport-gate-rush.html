@@ -1,0 +1,903 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<link rel="icon" href="data:," />
+<title>Airport Gate Rush</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#16324a; --ink-soft:#3d5a74; --card:#ffffff; --card-line:#dcebf5;
+    --sky1:#8fd8ff; --sky2:#e6f9ff; --accent:#ff7847; --accent2:#ffb703;
+    --good:#18b26b; --bad:#ef476f;
+    --radius:18px;
+    --shadow:0 10px 24px rgba(22,50,74,.16);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --ink:#eaf6ff; --ink-soft:#a9c6da; --card:#17334c; --card-line:#2a4d6e;
+      --sky1:#0d2b47; --sky2:#123a5c; --shadow:0 10px 24px rgba(0,0,0,.4); }
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; padding:0; }
+  html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+  body{
+    font-family:"Nunito",system-ui,sans-serif; color:var(--ink);
+    background:linear-gradient(180deg,var(--sky1),var(--sky2) 70%);
+    min-height:100dvh; overflow-x:hidden; overscroll-behavior-y:none;
+    touch-action:manipulation;
+  }
+  button{ font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; touch-action:manipulation; }
+  h1,h2,h3,.disp{ font-family:"Baloo 2","Nunito",sans-serif; }
+  .wrap{ max-width:1060px; margin:0 auto;
+    padding:calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left)); }
+  .screen{ display:none; }
+  .screen.on{ display:block; }
+
+  /* ---------- clouds deco ---------- */
+  .clouds{ position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:0; }
+  .cloud{ position:absolute; background:#fff; opacity:.55; border-radius:999px; }
+  @media (prefers-color-scheme: dark){ .cloud{ opacity:.08; } }
+  .cloud::before,.cloud::after{ content:""; position:absolute; background:inherit; border-radius:50%; }
+  .cloud.c1{ width:120px;height:36px; top:8%; animation:drift 55s linear infinite; }
+  .cloud.c2{ width:180px;height:46px; top:22%; animation:drift 80s linear infinite; animation-delay:-30s; }
+  .cloud.c3{ width:90px;height:28px; top:4%; animation:drift 65s linear infinite; animation-delay:-50s; }
+  .cloud::before{ width:55%; height:170%; left:12%; top:-80%; }
+  .cloud::after{ width:38%; height:120%; right:12%; top:-50%; }
+  @keyframes drift{ from{ transform:translateX(-30vw);} to{ transform:translateX(115vw);} }
+  @media (prefers-reduced-motion: reduce){ .cloud{ animation:none; } }
+
+  /* ---------- home ---------- */
+  .home-head{ position:relative; z-index:1; text-align:center; padding:26px 6px 4px; }
+  .logo-plane{ font-size:52px; line-height:1; display:inline-block; animation:bob 2.6s ease-in-out infinite; }
+  @keyframes bob{ 0%,100%{ transform:translateY(0) rotate(-4deg);} 50%{ transform:translateY(-9px) rotate(3deg);} }
+  @media (prefers-reduced-motion: reduce){ .logo-plane{ animation:none; } }
+  .game-title{ font-size:clamp(40px,8.5vw,66px); margin:2px 0 0; line-height:1.02; font-weight:800;
+    color:var(--ink); letter-spacing:.5px; }
+  .game-title .rush{ color:var(--accent); }
+  .tagline{ font-size:clamp(15px,3.4vw,19px); font-weight:800; color:var(--ink-soft); margin:6px 0 0; }
+  .wallet{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:16px 0 4px; position:relative; z-index:1; }
+  .pill{ background:var(--card); border:2px solid var(--card-line); border-radius:999px; padding:8px 16px;
+    font-weight:900; font-size:16px; box-shadow:var(--shadow); display:inline-flex; align-items:center; gap:7px; }
+  .pill .coin{ width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe27a,#ffb703 70%);
+    border:2px solid #d18d00; display:inline-block; }
+  .menu{ display:grid; gap:12px; max-width:520px; margin:20px auto 0; position:relative; z-index:1; }
+  .big-btn{ border-radius:20px; padding:17px 20px; font-size:21px; font-weight:900; color:#fff; text-align:left;
+    display:flex; align-items:center; gap:14px; box-shadow:var(--shadow); transition:transform .08s ease; width:100%;
+    font-family:"Baloo 2",sans-serif; letter-spacing:.3px; }
+  .big-btn:active{ transform:scale(.97); }
+  .big-btn .ic{ font-size:28px; }
+  .big-btn small{ display:block; font-family:"Nunito",sans-serif; font-size:13.5px; font-weight:800; opacity:.92; letter-spacing:0; }
+  .b-play{ background:linear-gradient(135deg,#ff7847,#ff4763); }
+  .b-endless{ background:linear-gradient(135deg,#4361ee,#7b2ff7); }
+  .b-daily{ background:linear-gradient(135deg,#0bb07b,#06d6a0); }
+  .b-how{ background:linear-gradient(135deg,#118ab2,#38b6e3); }
+  .hub-card{ max-width:520px; margin:18px auto 0; background:var(--card); border:2px solid var(--card-line);
+    border-radius:var(--radius); padding:14px 18px; box-shadow:var(--shadow); position:relative; z-index:1; }
+  .hub-card h3{ margin:0 0 4px; font-size:19px; }
+  .hub-card p{ margin:0; font-weight:700; color:var(--ink-soft); font-size:14.5px; }
+  .hub-bar{ height:12px; background:var(--card-line); border-radius:99px; margin-top:10px; overflow:hidden; }
+  .hub-bar i{ display:block; height:100%; background:linear-gradient(90deg,#ffb703,#ff7847); border-radius:99px; transition:width .4s; }
+
+  .sec-title{ text-align:center; font-size:26px; margin:30px 0 4px; position:relative; z-index:1; }
+  .sec-sub{ text-align:center; color:var(--ink-soft); font-weight:800; margin:0 0 14px; position:relative; z-index:1; }
+  .level-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; position:relative; z-index:1; }
+  .level-card{ border-radius:var(--radius); padding:16px 14px; text-align:left; color:#fff; box-shadow:var(--shadow);
+    min-height:132px; display:flex; flex-direction:column; gap:4px; transition:transform .08s; width:100%; }
+  .level-card:active{ transform:scale(.97); }
+  .level-card .lv{ font-size:12.5px; font-weight:900; letter-spacing:1.2px; text-transform:uppercase; opacity:.9; }
+  .level-card .nm{ font-family:"Baloo 2",sans-serif; font-size:21px; font-weight:800; line-height:1.1; }
+  .level-card .gl{ font-size:13px; font-weight:800; opacity:.95; }
+  .level-card .stars{ margin-top:auto; font-size:17px; letter-spacing:2px; }
+  .level-card.locked{ filter:grayscale(.85); opacity:.65; }
+  .th-day{ background:linear-gradient(150deg,#38b6e3,#7bd0ff); }
+  .th-tropical{ background:linear-gradient(150deg,#06b87e,#f4d35e); color:#173d2c; }
+  .th-neon{ background:linear-gradient(150deg,#3a0ca3,#f72585); }
+  .th-snow{ background:linear-gradient(150deg,#5e8fc4,#a9cdea); }
+  .th-sunset{ background:linear-gradient(150deg,#e85d3f,#f2a007); }
+  .th-mega{ background:linear-gradient(150deg,#14213d,#4361ee); }
+
+  /* ---------- how to ---------- */
+  .how-card{ max-width:640px; margin:18px auto 0; background:var(--card); border:2px solid var(--card-line);
+    border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); position:relative; z-index:1; }
+  .how-card h2{ margin:0 0 8px; font-size:26px; }
+  .how-card li{ font-weight:700; font-size:16px; margin:9px 0; line-height:1.45; }
+  .how-card ul{ padding-left:22px; margin:6px 0; }
+  .chip{ display:inline-block; padding:1px 9px; border-radius:99px; color:#fff; font-weight:900; font-size:13px; }
+  .back-btn{ margin-top:16px; background:var(--accent); color:#fff; font-weight:900; font-size:17px;
+    padding:13px 26px; border-radius:14px; box-shadow:var(--shadow); }
+
+  /* ---------- game ---------- */
+  #screen-game{ position:relative; z-index:1; }
+  .game-shell{ border-radius:22px; padding:12px; box-shadow:var(--shadow); transition:background .4s; }
+  .game-shell.shake{ animation:shake .38s ease; }
+  @keyframes shake{ 0%,100%{transform:translateX(0);} 20%{transform:translateX(-9px);} 40%{transform:translateX(8px);} 60%{transform:translateX(-6px);} 80%{transform:translateX(4px);} }
+  .gs-day{ background:linear-gradient(180deg,#a5e3ff,#e8fbff); color:#16324a; }
+  .gs-tropical{ background:linear-gradient(180deg,#8ff0d2,#fdf3c0); color:#173d2c; }
+  .gs-neon{ background:linear-gradient(180deg,#191938,#33135c); color:#fdfaff; }
+  .gs-snow{ background:linear-gradient(180deg,#dceefc,#ffffff); color:#1d3a56; }
+  .gs-sunset{ background:linear-gradient(180deg,#ffc98a,#ff9e9e); color:#4a2113; }
+  .gs-mega{ background:linear-gradient(180deg,#101c3a,#274690); color:#eef4ff; }
+
+  .hud{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .hud .pill{ box-shadow:none; border-color:rgba(0,0,0,.08); font-size:15px; padding:6px 13px; background:rgba(255,255,255,.92); color:#16324a; }
+  .hud .spacer{ flex:1; }
+  .icon-btn{ width:46px; height:46px; border-radius:14px; background:rgba(255,255,255,.92); color:#16324a;
+    font-size:21px; font-weight:900; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,.12); }
+  .icon-btn:active{ transform:scale(.94); }
+  .goal-line{ margin:10px 2px 0; font-weight:900; font-size:15.5px; display:flex; flex-wrap:wrap; gap:6px 16px; align-items:center; }
+  .goal-line .prog{ height:10px; flex:1 1 130px; background:rgba(0,0,0,.14); border-radius:99px; overflow:hidden; min-width:110px; }
+  .goal-line .prog i{ display:block; height:100%; background:var(--good); width:0%; transition:width .3s; }
+  .strikes{ letter-spacing:2px; font-size:15px; }
+
+  .gates{ display:grid; gap:10px; margin-top:12px; grid-template-columns:repeat(var(--gcols,2),1fr); }
+  @media (max-width:560px){ .gates{ grid-template-columns:repeat(2,1fr); } }
+  .gate{ border-radius:16px; background:rgba(255,255,255,.94); color:#16324a; padding:9px 10px 10px; text-align:left;
+    box-shadow:0 6px 14px rgba(0,0,0,.13); position:relative; border:3px solid transparent; width:100%; min-height:124px; }
+  .gate:active{ transform:scale(.98); }
+  .gate.hot{ border-color:#ffb703; animation:hotpulse .7s ease-in-out infinite alternate; }
+  @keyframes hotpulse{ from{ box-shadow:0 0 0 0 rgba(255,183,3,.0);} to{ box-shadow:0 0 0 6px rgba(255,183,3,.35);} }
+  .gate .g-head{ display:flex; align-items:center; gap:8px; }
+  .gate .g-tag{ color:#fff; font-weight:900; font-size:14.5px; padding:3px 11px; border-radius:99px; letter-spacing:.4px; }
+  .gate .g-time{ margin-left:auto; font-weight:900; font-size:14px; }
+  .gate .g-time.low{ color:var(--bad); animation:blink .5s steps(2) infinite; }
+  @keyframes blink{ 50%{ opacity:.35; } }
+  .gate .plane-row{ display:flex; align-items:center; gap:9px; margin-top:5px; }
+  .gate .plane-svg{ width:64px; height:40px; flex:none; }
+  .gate .seats{ display:flex; gap:4px; flex-wrap:wrap; }
+  .gate .seat{ width:15px; height:15px; border-radius:5px; background:#dbe7ef; border:2px solid #b9cfdd; }
+  .gate .seat.full{ background:var(--good); border-color:#0e8a4e; }
+  .gate .tbar{ height:8px; background:#e3edf3; border-radius:99px; margin-top:8px; overflow:hidden; }
+  .gate .tbar i{ display:block; height:100%; background:#38b6e3; width:100%; }
+  .gate .tbar i.low{ background:var(--bad); }
+  .gate .g-status{ font-size:12.5px; font-weight:900; color:#5b7a90; margin-top:5px; min-height:15px; }
+  .gate.away{ opacity:.55; }
+  .gate.angry{ animation:shake .3s ease; }
+  .gate.takeoff .plane-svg{ animation:takeoff .8s ease-in forwards; }
+  @keyframes takeoff{ 0%{ transform:translate(0,0) rotate(0);} 100%{ transform:translate(90px,-46px) rotate(-14deg) scale(.75); opacity:0; } }
+
+  .lounge-head{ display:flex; align-items:baseline; gap:10px; margin:16px 2px 8px; }
+  .lounge-head h3{ margin:0; font-size:21px; }
+  .lounge-head span{ font-weight:800; font-size:13.5px; opacity:.85; }
+  .lounge{ display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:10px; min-height:150px;
+    background:rgba(255,255,255,.45); border-radius:16px; padding:10px; }
+  .gs-neon .lounge,.gs-mega .lounge{ background:rgba(255,255,255,.13); }
+  .empty-note{ grid-column:1/-1; text-align:center; font-weight:900; opacity:.65; padding:26px 0; font-size:16px; }
+
+  .pax{ position:relative; border-radius:16px; background:#fff; border:3px solid #e2edf4; padding:6px 4px 7px;
+    display:flex; flex-direction:column; align-items:center; gap:1px; min-height:124px; width:100%;
+    box-shadow:0 4px 10px rgba(0,0,0,.10); animation:pop-in .25s ease; }
+  @keyframes pop-in{ from{ transform:scale(.6); opacity:0;} to{ transform:scale(1); opacity:1;} }
+  .pax svg{ width:52px; height:64px; }
+  .pax.selected{ border-color:#ffb703; box-shadow:0 0 0 4px rgba(255,183,3,.45),0 8px 16px rgba(0,0,0,.18); animation:hop .45s ease infinite alternate; }
+  @keyframes hop{ from{ transform:translateY(0);} to{ transform:translateY(-6px);} }
+  @media (prefers-reduced-motion: reduce){ .pax.selected{ animation:none; } .pax{ animation:none; } }
+  .pax.vip{ border-color:#e9b949; background:linear-gradient(180deg,#fffbe8,#fff3c4); }
+  .pax .pbar{ width:88%; height:8px; background:#e6eef3; border-radius:99px; overflow:hidden; margin-top:3px; }
+  .pax .pbar i{ display:block; height:100%; width:100%; }
+  .pax .badge{ position:absolute; top:-8px; right:-6px; min-width:26px; height:26px; padding:0 6px; border-radius:99px;
+    color:#fff; font-weight:900; font-size:13px; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 3px 7px rgba(0,0,0,.25); z-index:2; }
+  .badge.b-vip{ background:linear-gradient(135deg,#ffcf3f,#e79b00); color:#5c3a00; font-size:11px; letter-spacing:.4px; }
+  .badge.b-conf{ background:#7b2ff7; font-size:16px; }
+  .badge.b-fam{ background:#118ab2; font-size:11.5px; }
+  .pax .fam-note{ font-size:11px; font-weight:900; color:#118ab2; }
+  .pax.leaving{ animation:storm .6s ease forwards; }
+  @keyframes storm{ to{ transform:translateX(-46px) rotate(-7deg); opacity:0; } }
+  .pax.angry{ border-color:var(--bad); animation:shake .3s ease; }
+
+  .floater{ position:fixed; z-index:60; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:21px;
+    pointer-events:none; animation:float-up 1s ease forwards; text-shadow:0 2px 0 rgba(255,255,255,.7); }
+  @keyframes float-up{ from{ transform:translateY(0); opacity:1;} to{ transform:translateY(-56px); opacity:0;} }
+  .confetto{ position:fixed; z-index:59; width:10px; height:14px; pointer-events:none; border-radius:2px;
+    animation:conf-fall 1.15s ease-in forwards; }
+  @keyframes conf-fall{ to{ transform:translateY(190px) rotate(560deg); opacity:0; } }
+
+  /* ---------- overlays ---------- */
+  .overlay{ position:fixed; inset:0; background:rgba(10,26,43,.62); display:none; align-items:center; justify-content:center;
+    z-index:50; padding:calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left)); }
+  .overlay.on{ display:flex; }
+  .modal{ background:var(--card); color:var(--ink); border-radius:22px; padding:24px 22px; max-width:430px; width:100%;
+    box-shadow:0 24px 60px rgba(0,0,0,.35); text-align:center; max-height:92dvh; overflow-y:auto; }
+  .modal h2{ margin:0 0 6px; font-size:30px; }
+  .modal p{ font-weight:700; color:var(--ink-soft); margin:6px 0; font-size:15.5px; line-height:1.45; }
+  .modal .goal-box{ background:rgba(56,182,227,.13); border:2px dashed #38b6e3; border-radius:14px; padding:11px; margin:12px 0;
+    font-weight:900; font-size:16.5px; color:var(--ink); }
+  .modal .row{ display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
+  .modal .row button{ flex:1 1 120px; padding:14px 10px; border-radius:14px; font-weight:900; font-size:17px; color:#fff; }
+  .btn-main{ background:linear-gradient(135deg,#ff7847,#ff4763); }
+  .btn-alt{ background:#5b7a90; }
+  .btn-green{ background:linear-gradient(135deg,#0bb07b,#06d6a0); }
+  .stars-big{ font-size:46px; letter-spacing:8px; margin:6px 0 2px; }
+  .stars-big .lit{ color:#ffb703; text-shadow:0 3px 0 #d18d00; }
+  .stars-big .dim{ color:#c9d8e2; }
+  .stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+  .stat-grid div{ background:rgba(0,0,0,.05); border-radius:12px; padding:9px; font-weight:900; font-size:14.5px; }
+  .stat-grid div b{ display:block; font-size:21px; font-family:"Baloo 2",sans-serif; }
+  @media (prefers-color-scheme: dark){ .stat-grid div{ background:rgba(255,255,255,.08); } }
+  .special-note{ font-size:13.5px !important; }
+  .kbd-hint{ font-size:13px; opacity:.75; }
+</style>
+</head>
+<body>
+<div class="clouds" aria-hidden="true"><div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div></div>
+
+<!-- ================= HOME ================= -->
+<section id="screen-home" class="screen on">
+  <div class="wrap">
+    <div class="home-head">
+      <span class="logo-plane" aria-hidden="true">✈️</span>
+      <h1 class="game-title">Airport <span class="rush">Gate Rush</span></h1>
+      <p class="tagline">Tap a passenger, tap their gate, fill the plane before it leaves!</p>
+    </div>
+    <div class="wallet">
+      <span class="pill"><span class="coin"></span><span id="w-coins">0</span> coins</span>
+      <span class="pill">⭐ <span id="w-stars">0</span> stars</span>
+      <span class="pill">🏆 Endless best: <span id="w-best">0</span></span>
+    </div>
+    <nav class="menu">
+      <button class="big-btn b-play" id="btn-play"><span class="ic">🛫</span><span>Play Levels<small>Beat the goal, earn stars, unlock new airports</small></span></button>
+      <button class="big-btn b-endless" id="btn-endless"><span class="ic">♾️</span><span>Endless Mode<small>Survive the rush — how high can you score?</small></span></button>
+      <button class="big-btn b-daily" id="btn-daily"><span class="ic">📅</span><span>Daily Challenge<small id="daily-sub">A fresh airport puzzle every day</small></span></button>
+      <button class="big-btn b-how" id="btn-how"><span class="ic">❓</span><span>How to Play<small>The rules in 20 seconds</small></span></button>
+    </nav>
+    <div class="hub-card">
+      <h3>🏢 Your Hub: <span id="hub-name">Tiny Airstrip</span></h3>
+      <p id="hub-desc">Earn stars in levels to grow your little airstrip into a mega hub.</p>
+      <div class="hub-bar"><i id="hub-fill" style="width:0%"></i></div>
+    </div>
+    <h2 class="sec-title">Pick an Airport</h2>
+    <p class="sec-sub">Finish a level to unlock the next airport.</p>
+    <div class="level-grid" id="level-grid"></div>
+  </div>
+</section>
+
+<!-- ================= HOW TO ================= -->
+<section id="screen-how" class="screen">
+  <div class="wrap">
+    <div class="how-card">
+      <h2>How to Play 🧭</h2>
+      <ul>
+        <li><b>Tap a passenger</b>, then <b>tap the gate</b> with the same color as their ticket. They hop over and board.</li>
+        <li>Fill every seat before the plane's timer runs out — <b>planes leave on time, full or not!</b></li>
+        <li>Watch the <b>patience bar</b> under each passenger. Green is chill, red means they're about to storm off angry.</li>
+        <li><b>3 wrong sends = game over.</b> Storm-offs count against you too — 5 and your shift ends.</li>
+        <li>Chain correct boardings for <b>combos</b> and bonus points. Full planes pay out <b>coins</b>.</li>
+      </ul>
+      <h2 style="font-size:21px; margin-top:16px;">Special Passengers</h2>
+      <ul>
+        <li><span class="chip" style="background:#e79b00;">VIP</span> Gold border, double points — but almost no patience. Board them first!</li>
+        <li><span class="chip" style="background:#118ab2;">FAMILY ×3</span> Three matching travelers who arrive together. Board all 3 for a bonus.</li>
+        <li><span class="chip" style="background:#7b2ff7;">?</span> Confused travelers <b>switch ticket color once</b> — check the color again before you send them!</li>
+      </ul>
+      <button class="back-btn" id="btn-how-back">← Back to Home</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GAME ================= -->
+<section id="screen-game" class="screen">
+  <div class="wrap" style="padding-top:calc(10px + env(safe-area-inset-top));">
+    <div class="game-shell gs-day" id="game-shell">
+      <div class="hud">
+        <span class="pill">⭐ <span id="h-score">0</span></span>
+        <span class="pill"><span class="coin" style="width:16px;height:16px;border-width:2px;"></span> <span id="h-coins">0</span></span>
+        <span class="pill" id="h-combo" style="display:none;">🔥 Combo ×<span id="h-combo-n">1</span></span>
+        <span class="spacer"></span>
+        <button class="icon-btn" id="btn-mute" aria-label="Mute or unmute sound">🔊</button>
+        <button class="icon-btn" id="btn-pause" aria-label="Pause game">⏸</button>
+      </div>
+      <div class="goal-line">
+        <span id="h-goal">Goal</span>
+        <span class="prog"><i id="h-prog"></i></span>
+        <span class="strikes" id="h-strikes" title="Wrong sends">✈️✈️✈️</span>
+        <span id="h-lost-wrap">😤 Lost: <span id="h-lost">0</span>/5</span>
+      </div>
+      <div class="gates" id="gates"></div>
+      <div class="lounge-head">
+        <h3>Waiting Lounge</h3>
+        <span id="h-hint">Tap a passenger to pick them up</span>
+      </div>
+      <div class="lounge" id="lounge"></div>
+    </div>
+  </div>
+</section>
+
+<!-- level intro -->
+<div class="overlay" id="ov-intro">
+  <div class="modal">
+    <h2 id="intro-title">Level 1</h2>
+    <p id="intro-theme"></p>
+    <div class="goal-box" id="intro-goal"></div>
+    <p id="intro-specials" class="special-note"></p>
+    <p class="kbd-hint">Tap a passenger → tap the matching-color gate. 3 wrong sends ends the game!</p>
+    <div class="row"><button class="btn-main" id="btn-start">Start Shift ▶</button></div>
+    <div class="row"><button class="btn-alt" id="btn-intro-home">Back</button></div>
+  </div>
+</div>
+
+<!-- pause -->
+<div class="overlay" id="ov-pause">
+  <div class="modal">
+    <h2>Paused ⏸</h2>
+    <p>All planes are holding. Take a breath!</p>
+    <div class="row"><button class="btn-green" id="btn-resume">Resume</button></div>
+    <div class="row"><button class="btn-main" id="btn-restart">Restart</button><button class="btn-alt" id="btn-quit">Quit to Home</button></div>
+  </div>
+</div>
+
+<!-- results -->
+<div class="overlay" id="ov-result">
+  <div class="modal">
+    <h2 id="res-title">Shift Complete!</h2>
+    <div class="stars-big" id="res-stars"></div>
+    <p id="res-msg"></p>
+    <div class="stat-grid">
+      <div>Score<b id="res-score">0</b></div>
+      <div>Coins earned<b id="res-coins">0</b></div>
+      <div>Passengers served<b id="res-served">0</b></div>
+      <div>Full planes<b id="res-planes">0</b></div>
+      <div>Best combo<b id="res-combo">0</b></div>
+      <div>Passengers lost<b id="res-lost">0</b></div>
+    </div>
+    <div class="row" id="res-row">
+      <button class="btn-main" id="btn-again">Play Again</button>
+      <button class="btn-green" id="btn-next">Next Level ▶</button>
+    </div>
+    <div class="row"><button class="btn-alt" id="btn-res-home">Home</button></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   Airport Gate Rush — single-file game
+   ============================================================ */
+const $ = s => document.querySelector(s);
+
+const COLORS = [
+  { name:"Coral", hex:"#ef476f", dark:"#c22a50" },
+  { name:"Sky",   hex:"#1b9ce4", dark:"#0f6fa8" },
+  { name:"Mint",  hex:"#0bb07b", dark:"#077a54" },
+  { name:"Sunny", hex:"#f2a007", dark:"#b87700" }
+];
+const SKINS = ["#ffd9b3","#f2b880","#c97e4e","#8d5524","#ffe0d1","#a96b3f"];
+const HAIRS = ["#2b2b2b","#6b4226","#c98a2d","#8a8a8a","#b33a3a","#3a5f8a","#222"];
+const THEME_NAMES = { day:"Bright Day", tropical:"Tropical Island", neon:"Neon Night", snow:"Snowy Winter", sunset:"Sunset Sands", mega:"Mega Hub Nights" };
+
+const LEVELS = [
+  { n:1, name:"Sunny Start Airport", theme:"day", gates:2, caps:[4], planeTime:48, spawnEvery:2.6, patience:[26,34], goalServe:12, goalPlanes:2, specials:[] },
+  { n:2, name:"Palm Breeze Island", theme:"tropical", gates:3, caps:[4,5], planeTime:44, spawnEvery:2.4, patience:[23,31], goalServe:16, goalPlanes:3, specials:["family"] },
+  { n:3, name:"Neon Nights City", theme:"neon", gates:4, caps:[4,5], planeTime:42, spawnEvery:2.2, patience:[21,29], goalServe:18, goalPlanes:3, specials:["family","vip"] },
+  { n:4, name:"Frostbite Falls", theme:"snow", gates:4, caps:[3,4,5], planeTime:38, spawnEvery:2.0, patience:[20,27], goalServe:20, goalPlanes:4, specials:["family","vip","confused"] },
+  { n:5, name:"Sunset Sands Strip", theme:"sunset", gates:4, caps:[4,5,6], planeTime:34, spawnEvery:1.8, patience:[18,25], goalServe:24, goalPlanes:4, specials:["family","vip","confused"] },
+  { n:6, name:"Mega Hub Prime", theme:"mega", gates:4, caps:[3,5,6], planeTime:30, spawnEvery:1.6, patience:[16,23], goalServe:28, goalPlanes:5, specials:["family","vip","confused"] }
+];
+
+/* session profile (in-memory for this visit) */
+const profile = { coins:0, stars:{}, unlocked:1, bestEndless:0, dailyDone:"" };
+function totalStars(){ return Object.values(profile.stars).reduce((a,b)=>a+b,0); }
+const HUBS = [ [0,"Tiny Airstrip"], [4,"Local Airport"], [8,"Regional Hub"], [12,"International Airport"], [16,"World Mega Hub"] ];
+function hubName(){ let n=HUBS[0][1]; for(const [t,name] of HUBS) if(totalStars()>=t) n=name; return n; }
+
+/* ---------------- audio (all generated) ---------------- */
+let AC = null, muted = false, musicTimer = null, musicStep = 0;
+function ac(){ if(!AC){ try{ AC = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(AC && AC.state==="suspended") AC.resume(); return AC; }
+function tone(freq, dur, type, vol, when, slideTo){
+  if(muted || !ac()) return;
+  const t = AC.currentTime + (when||0);
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type||"sine"; o.frequency.setValueAtTime(freq, t);
+  if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t+dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol||0.15, t+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t+dur+0.05);
+}
+const sfx = {
+  pick(){ tone(660,.09,"sine",.12); tone(880,.1,"sine",.1,.05); },
+  good(combo){ const base = 520 + Math.min(combo,10)*30; tone(base,.12,"triangle",.18); tone(base*1.5,.16,"triangle",.16,.07); },
+  wrong(){ tone(160,.25,"sawtooth",.14,0,90); tone(120,.3,"square",.08,.02,70); },
+  takeoff(){ tone(220,.7,"sawtooth",.07,0,880); tone(440,.7,"sine",.1,.05,1320); },
+  angry(){ tone(300,.12,"square",.12); tone(240,.14,"square",.12,.13); tone(180,.2,"square",.12,.28); },
+  pop(){ tone(980,.08,"sine",.14,0,1400); },
+  win(){ [523,659,784,1047].forEach((f,i)=>tone(f,.22,"triangle",.18,i*.12)); },
+  lose(){ [392,330,262,196].forEach((f,i)=>tone(f,.26,"triangle",.16,i*.14)); },
+  coin(){ tone(1320,.09,"square",.07); tone(1760,.14,"square",.07,.07); }
+};
+const MELODY = [523,587,659,784,659,587,523,587, 659,784,880,784,659,587,523,0, 523,587,659,784,880,784,659,587, 784,659,587,523,587,659,523,0];
+function startMusic(){
+  stopMusic(); if(muted) return;
+  musicTimer = setInterval(()=>{
+    if(muted || !AC || G.paused || !G.running) return;
+    const f = MELODY[musicStep % MELODY.length]; musicStep++;
+    if(f) tone(f,.24,"triangle",.055);
+    if(musicStep % 2 === 0) tone(131,.3,"sine",.05);
+  }, 265);
+}
+function stopMusic(){ if(musicTimer){ clearInterval(musicTimer); musicTimer=null; } }
+
+/* ---------------- screens ---------------- */
+function show(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("on"));
+  $("#"+id).classList.add("on");
+  window.scrollTo(0,0);
+}
+function renderHome(){
+  $("#w-coins").textContent = profile.coins;
+  $("#w-stars").textContent = totalStars();
+  $("#w-best").textContent = profile.bestEndless;
+  $("#hub-name").textContent = hubName();
+  const pct = Math.min(100, totalStars()/18*100);
+  $("#hub-fill").style.width = pct + "%";
+  $("#hub-desc").textContent = totalStars()>=18
+    ? "Your hub is fully grown — a world mega hub! Keep chasing high scores."
+    : "Earn stars in levels to grow your hub. " + totalStars() + " / 18 stars so far.";
+  const today = new Date().toDateString();
+  $("#daily-sub").textContent = profile.dailyDone === today ? "Done today ✓ — play again for fun!" : "A fresh airport puzzle every day (+50 coin bonus)";
+  const grid = $("#level-grid"); grid.innerHTML = "";
+  LEVELS.forEach((lv,i)=>{
+    const locked = lv.n > profile.unlocked;
+    const b = document.createElement("button");
+    b.className = "level-card th-" + lv.theme + (locked ? " locked" : "");
+    const st = profile.stars[lv.n] || 0;
+    b.innerHTML = '<span class="lv">Level '+lv.n+' · '+THEME_NAMES[lv.theme]+'</span>' +
+      '<span class="nm">'+(locked ? "🔒 " : "")+lv.name+'</span>' +
+      '<span class="gl">Serve '+lv.goalServe+' · Fill '+lv.goalPlanes+' planes · '+lv.gates+' gates</span>' +
+      '<span class="stars">'+(locked ? "Locked" : ("★".repeat(st)+"☆".repeat(3-st)))+'</span>';
+    b.addEventListener("click", ()=>{ if(locked){ sfx.wrong(); floater(b,"Beat the level before this one first!", "#ef476f"); return; } openIntro("level", lv); });
+    grid.appendChild(b);
+  });
+}
+
+/* ---------------- floaters & confetti ---------------- */
+function floater(anchorEl, text, color){
+  const r = anchorEl.getBoundingClientRect();
+  const f = document.createElement("div");
+  f.className = "floater"; f.textContent = text; f.style.color = color || "#0bb07b";
+  f.style.left = Math.max(6, r.left + r.width/2 - 30) + "px";
+  f.style.top = (r.top - 8) + "px";
+  document.body.appendChild(f);
+  setTimeout(()=>f.remove(), 1000);
+}
+function confetti(x, y, n){
+  const cols = ["#ef476f","#ffb703","#06d6a0","#118ab2","#7b2ff7","#ff7847"];
+  for(let i=0;i<(n||22);i++){
+    const c = document.createElement("div");
+    c.className = "confetto";
+    c.style.background = cols[i % cols.length];
+    c.style.left = (x + (Math.random()*90-45)) + "px";
+    c.style.top = y + "px";
+    c.style.animationDelay = (Math.random()*0.25) + "s";
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(), 1600);
+  }
+}
+
+/* ---------------- SVG people & planes ---------------- */
+let uid = 1;
+function personSVG(p){
+  const c = COLORS[p.color];
+  const crown = p.vip ? '<polygon points="19,4 24,0 30,5 36,0 41,4 40,10 20,10" fill="#ffcf3f" stroke="#d18d00" stroke-width="1.4"/>' : "";
+  return '<svg viewBox="0 0 60 76" aria-hidden="true">' + crown +
+    '<rect x="21" y="56" width="7" height="14" rx="3" fill="#3b4a63"/>' +
+    '<rect x="33" y="56" width="7" height="14" rx="3" fill="#3b4a63"/>' +
+    '<rect x="15" y="31" width="30" height="29" rx="11" fill="'+c.hex+'"/>' +
+    '<circle cx="30" cy="20" r="11.5" fill="'+p.skin+'"/>' +
+    '<path d="M18.5 20 a11.5 11.5 0 0 1 23 0 l0 -3.5 a11.5 9 0 0 0 -23 0 z" fill="'+p.hair+'"/>' +
+    '<circle cx="26" cy="21" r="1.5" fill="#263238"/><circle cx="34" cy="21" r="1.5" fill="#263238"/>' +
+    '<path d="M26.5 26 q3.5 2.6 7 0" stroke="#263238" stroke-width="1.5" fill="none" stroke-linecap="round"/>' +
+    '<rect x="41" y="36" width="14" height="19" rx="2.5" fill="#fff" stroke="#b9cfdd" stroke-width="1.4"/>' +
+    '<rect x="41" y="36" width="14" height="6.5" rx="2.5" fill="'+c.hex+'"/>' +
+    '<line x1="44.5" y1="47" x2="51.5" y2="47" stroke="#b9cfdd" stroke-width="1.6"/>' +
+    '<line x1="44.5" y1="51" x2="51.5" y2="51" stroke="#b9cfdd" stroke-width="1.6"/>' +
+  '</svg>';
+}
+function planeSVG(hex){
+  return '<svg class="plane-svg" viewBox="0 0 100 62" aria-hidden="true">' +
+    '<path d="M6 38 Q4 30 14 29 L52 24 L70 8 Q76 3 79 9 L82 15 L68 27 L92 30 Q98 31 97 36 Q96 41 90 41 L66 40 L76 52 Q78 56 73 56 L64 56 L56 42 L20 44 Q9 44 6 38 Z" fill="'+hex+'"/>' +
+    '<circle cx="30" cy="33" r="3" fill="#eaf7ff"/><circle cx="42" cy="32" r="3" fill="#eaf7ff"/><circle cx="54" cy="31" r="3" fill="#eaf7ff"/>' +
+  '</svg>';
+}
+
+/* ============================================================
+   GAME ENGINE
+   ============================================================ */
+const G = {
+  running:false, paused:false, over:false, mode:"level", cfg:null, levelN:0, dailyKey:"",
+  pax:[], gates:[], selected:null, families:{},
+  score:0, coinsRun:0, served:0, planesFull:0, lost:0, mistakes:0, combo:0, bestCombo:0,
+  spawnT:0, elapsed:0, tickInt:null
+};
+const MAX_LOST = 5, MAX_WRONG = 3;
+
+function dailyConfig(){
+  const now = new Date();
+  const seed = now.getFullYear()*372 + (now.getMonth()+1)*31 + now.getDate();
+  const themes = ["day","tropical","neon","snow","sunset","mega"];
+  const theme = themes[seed % themes.length];
+  return { n:0, name:"Daily Challenge", theme, gates: 3 + (seed % 2), caps:[4,5], planeTime:38, spawnEvery:2.1,
+    patience:[20,28], goalServe:18, goalPlanes:3, specials:["family","vip","confused"], seed };
+}
+
+function openIntro(mode, lv){
+  ac(); // unlock audio on gesture
+  G.mode = mode;
+  G.cfg = mode === "daily" ? dailyConfig() : (mode === "endless"
+    ? { n:0, name:"Endless Rush", theme:["day","neon","tropical","mega"][Math.floor(Math.random()*4)], gates:3, caps:[3,4,5], planeTime:40, spawnEvery:2.3, patience:[22,30], goalServe:0, goalPlanes:0, specials:["family","vip","confused"] }
+    : lv);
+  G.levelN = lv ? lv.n : 0;
+  $("#intro-title").textContent = mode === "level" ? ("Level " + lv.n + " — " + lv.name) : G.cfg.name;
+  $("#intro-theme").textContent = "📍 " + THEME_NAMES[G.cfg.theme] + " · " + G.cfg.gates + " gates · planes hold " + Math.min(...G.cfg.caps) + "–" + Math.max(...G.cfg.caps);
+  $("#intro-goal").textContent = mode === "endless"
+    ? "🎯 No finish line! Score as high as you can. Game over at 3 wrong sends or 5 storm-offs."
+    : "🎯 Serve " + G.cfg.goalServe + " passengers AND fill " + G.cfg.goalPlanes + " planes before your shift falls apart!";
+  const sp = G.cfg.specials;
+  $("#intro-specials").textContent = sp.length
+    ? "Watch out for: " + sp.map(s => s==="vip" ? "⭐ VIPs (double points, zero patience)" : s==="family" ? "👨‍👩‍👧 Families of 3 (bonus if all board)" : "❓ Confused travelers (ticket color switches once)").join(" · ")
+    : "Nice and simple: match ticket colors to gates. Fill planes for coins!";
+  $("#ov-intro").classList.add("on");
+}
+
+function startGame(){
+  $("#ov-intro").classList.remove("on");
+  $("#ov-result").classList.remove("on");
+  show("screen-game");
+  const cfg = G.cfg;
+  Object.assign(G, { running:true, paused:false, over:false, pax:[], gates:[], selected:null, families:{},
+    score:0, coinsRun:0, served:0, planesFull:0, lost:0, mistakes:0, combo:0, bestCombo:0, spawnT:0.6, elapsed:0 });
+  const shell = $("#game-shell");
+  shell.className = "game-shell gs-" + cfg.theme;
+  $("#gates").style.setProperty("--gcols", cfg.gates);
+  buildGates();
+  $("#lounge").innerHTML = "";
+  updateHUD();
+  $("#h-hint").textContent = "Tap a passenger to pick them up";
+  clearInterval(G.tickInt);
+  G.tickInt = setInterval(tick, 100);
+  startMusic();
+  spawnPax(); spawnPax();
+}
+
+function buildGates(){
+  const wrap = $("#gates"); wrap.innerHTML = ""; G.gates = [];
+  for(let i=0;i<G.cfg.gates;i++){
+    const g = { idx:i, color:i, cap:pickCap(), filled:0, timer:0, maxTimer:0, away:0, el:null };
+    g.maxTimer = g.timer = G.cfg.planeTime * (0.9 + Math.random()*0.25);
+    const b = document.createElement("button");
+    b.className = "gate"; b.setAttribute("aria-label","Gate " + COLORS[i].name);
+    b.innerHTML =
+      '<div class="g-head"><span class="g-tag" style="background:'+COLORS[i].hex+'">GATE '+(i+1)+' · '+COLORS[i].name.toUpperCase()+'</span>' +
+      '<span class="g-time"></span></div>' +
+      '<div class="plane-row">'+planeSVG(COLORS[i].hex)+'<span class="seats"></span></div>' +
+      '<div class="tbar"><i></i></div><div class="g-status"></div>';
+    b.addEventListener("click", ()=>onGateTap(g));
+    wrap.appendChild(b); g.el = b;
+    G.gates.push(g); drawGate(g);
+  }
+}
+function pickCap(){ const c = G.cfg.caps; return c[Math.floor(Math.random()*c.length)]; }
+function drawGate(g){
+  const seats = g.el.querySelector(".seats"); seats.innerHTML = "";
+  for(let i=0;i<g.cap;i++){ const s = document.createElement("span"); s.className = "seat" + (i<g.filled ? " full" : ""); seats.appendChild(s); }
+  g.el.querySelector(".g-status").textContent = g.away > 0 ? "Next plane landing…" : (g.filled + " / " + g.cap + " boarded" + (g.filled===g.cap ? " — FULL!" : ""));
+  g.el.classList.toggle("away", g.away > 0);
+  if(g.away > 0){ g.el.querySelector(".g-time").textContent = "✈️ …"; g.el.querySelector(".tbar i").style.width = "0%"; }
+}
+
+/* ---------- passengers ---------- */
+function makePax(colorIdx, opts){
+  opts = opts || {};
+  const cfg = G.cfg;
+  let max = cfg.patience[0] + Math.random()*(cfg.patience[1]-cfg.patience[0]);
+  if(G.mode === "endless") max *= Math.max(0.62, 1 - G.elapsed/420); // endless slowly tightens
+  if(opts.vip) max *= 0.45;
+  const p = { id:uid++, color:colorIdx, patience:max, maxPatience:max, age:0,
+    vip:!!opts.vip, confused:!!opts.confused, switched:false,
+    switchAt: 3.5 + Math.random()*4.5, familyId: opts.familyId || 0,
+    skin: SKINS[Math.floor(Math.random()*SKINS.length)], hair: HAIRS[Math.floor(Math.random()*HAIRS.length)], el:null };
+  const b = document.createElement("button");
+  b.className = "pax" + (p.vip ? " vip" : "");
+  b.setAttribute("aria-label", COLORS[colorIdx].name + " ticket passenger" + (p.vip ? ", VIP" : ""));
+  b.innerHTML = personSVG(p) +
+    (p.vip ? '<span class="badge b-vip">VIP</span>' : "") +
+    (p.confused ? '<span class="badge b-conf">?</span>' : "") +
+    (p.familyId ? '<span class="badge b-fam">FAM</span>' : "") +
+    '<span class="pbar"><i></i></span>' +
+    (p.familyId ? '<span class="fam-note">family of 3</span>' : "");
+  b.addEventListener("click", ()=>onPaxTap(p));
+  p.el = b;
+  $("#lounge").appendChild(b);
+  G.pax.push(p);
+  drawPaxBar(p);
+  return p;
+}
+function drawPaxBar(p){
+  const f = Math.max(0, p.patience / p.maxPatience);
+  const bar = p.el.querySelector(".pbar i");
+  bar.style.width = (f*100) + "%";
+  bar.style.background = "hsl(" + Math.round(f*115) + ",75%,42%)";
+}
+function spawnPax(){
+  const cfg = G.cfg;
+  const loungeCap = 8;
+  if(G.pax.length >= loungeCap) return;
+  const specials = cfg.specials;
+  const roll = Math.random();
+  // family of 3 (needs room for 3)
+  if(specials.includes("family") && roll < 0.16 && G.pax.length <= loungeCap - 3){
+    const color = Math.floor(Math.random()*cfg.gates);
+    const fid = uid++;
+    G.families[fid] = { total:3, boarded:0, gone:false };
+    for(let i=0;i<3;i++) makePax(color, { familyId: fid });
+    return;
+  }
+  const color = Math.floor(Math.random()*cfg.gates);
+  const opts = {};
+  if(specials.includes("vip") && roll < 0.30) opts.vip = true;
+  else if(specials.includes("confused") && roll < 0.48) opts.confused = true;
+  makePax(color, opts);
+}
+
+function onPaxTap(p){
+  if(!G.running || G.paused || G.over) return;
+  ac();
+  if(G.selected === p){ selectPax(null); return; }
+  selectPax(p); sfx.pick();
+}
+function selectPax(p){
+  if(G.selected) G.selected.el.classList.remove("selected");
+  G.selected = p;
+  if(p){ p.el.classList.add("selected"); $("#h-hint").textContent = "Now tap the " + COLORS[p.color].name + " gate!"; }
+  else $("#h-hint").textContent = "Tap a passenger to pick them up";
+  document.querySelectorAll(".gate").forEach((el,i)=> el.classList.toggle("hot", !!p && G.gates[i].color === p.color && G.gates[i].away <= 0));
+}
+
+function onGateTap(g){
+  if(!G.running || G.paused || G.over) return;
+  ac();
+  const p = G.selected;
+  if(!p){ g.el.classList.add("angry"); setTimeout(()=>g.el.classList.remove("angry"), 320); $("#h-hint").textContent = "Pick a passenger first, then tap a gate!"; return; }
+  if(g.away > 0){ floater(g.el, "No plane yet!", "#ef476f"); return; }
+  if(p.color !== g.color){ wrongSend(p, g); return; }
+  boardPax(p, g);
+}
+
+function wrongSend(p, g){
+  G.mistakes++; G.combo = 0;
+  sfx.wrong();
+  const shell = $("#game-shell");
+  shell.classList.remove("shake"); void shell.offsetWidth; shell.classList.add("shake");
+  p.el.classList.add("angry"); setTimeout(()=>p.el.classList.remove("angry"), 340);
+  floater(g.el, "Wrong gate! ✖ " + G.mistakes + "/3", "#ef476f");
+  selectPax(null);
+  updateHUD();
+  if(G.mistakes >= MAX_WRONG) endGame(false, "3 wrong sends! Too many passengers missed their flights.");
+}
+
+function boardPax(p, g){
+  selectPax(null);
+  G.pax = G.pax.filter(x => x !== p);
+  // fly a clone to the gate
+  const r = p.el.getBoundingClientRect(), gr = g.el.getBoundingClientRect();
+  const clone = p.el.cloneNode(true);
+  clone.style.cssText = "position:fixed;z-index:55;margin:0;left:"+r.left+"px;top:"+r.top+"px;width:"+r.width+"px;pointer-events:none;";
+  document.body.appendChild(clone);
+  p.el.remove();
+  const dx = gr.left + gr.width/2 - (r.left + r.width/2), dy = gr.top + 26 - r.top;
+  clone.animate([
+    { transform:"translate(0,0) scale(1)", opacity:1 },
+    { transform:"translate("+dx+"px,"+(dy-34)+"px) scale(.62) rotate(4deg)", opacity:.95, offset:.6 },
+    { transform:"translate("+dx+"px,"+dy+"px) scale(.3)", opacity:.25 }
+  ], { duration:460, easing:"ease-in-out" }).onfinish = ()=> clone.remove();
+
+  g.filled++; G.served++;
+  G.combo++; G.bestCombo = Math.max(G.bestCombo, G.combo);
+  const mult = G.combo >= 8 ? 3 : G.combo >= 4 ? 2 : 1;
+  const pts = (p.vip ? 100 : 50) * mult;
+  G.score += pts;
+  sfx.good(G.combo);
+  floater(g.el, "+" + pts + (p.vip ? " VIP!" : "") + (mult > 1 ? " ×" + mult : ""), p.vip ? "#d18d00" : "#0b7a4e");
+  if(G.combo > 0 && G.combo % 5 === 0){ floater(g.el, "🔥 COMBO " + G.combo + "!", "#ff7847"); sfx.pop(); }
+
+  if(p.familyId && G.families[p.familyId]){
+    const fam = G.families[p.familyId];
+    fam.boarded++;
+    if(fam.boarded === fam.total && !fam.gone){
+      G.score += 150; G.coinsRun += 5; profile.coins += 5;
+      floater(g.el, "👨‍👩‍👧 Family bonus +150!", "#118ab2"); sfx.coin();
+    }
+  }
+  drawGate(g); updateHUD();
+  if(g.filled >= g.cap) fullPlane(g);
+  checkWin();
+}
+
+function fullPlane(g){
+  G.planesFull++;
+  G.score += 200; G.coinsRun += 10; profile.coins += 10;
+  sfx.takeoff(); sfx.coin();
+  const r = g.el.getBoundingClientRect();
+  confetti(r.left + r.width/2, r.top + 20, 26);
+  floater(g.el, "✈️ FULL PLANE! +200 · +10 coins", "#7b2ff7");
+  g.el.classList.add("takeoff");
+  g.away = 1.4; g.filled = 0;
+  setTimeout(()=>{ g.el.classList.remove("takeoff"); g.cap = pickCap(); g.maxTimer = g.timer = G.cfg.planeTime * (0.9 + Math.random()*0.25); drawGate(g); }, 850);
+  drawGate(g); updateHUD();
+}
+
+function departPlane(g){
+  // timer ran out — plane leaves with whoever is on board
+  const had = g.filled;
+  sfx.takeoff();
+  floater(g.el, had > 0 ? "✈️ Plane left with " + had + " aboard" : "✈️ Plane left EMPTY!", "#e07b00");
+  g.el.classList.add("takeoff");
+  g.away = 1.4; g.filled = 0;
+  if(had === 0) G.combo = 0;
+  setTimeout(()=>{ g.el.classList.remove("takeoff"); g.cap = pickCap(); g.maxTimer = g.timer = G.cfg.planeTime * (0.9 + Math.random()*0.25); drawGate(g); }, 850);
+  drawGate(g); updateHUD();
+}
+
+function paxStormOff(p){
+  G.pax = G.pax.filter(x => x !== p);
+  if(G.selected === p) selectPax(null);
+  G.lost++; G.combo = 0;
+  sfx.angry();
+  floater(p.el, p.vip ? "😤 VIP stormed off!" : "😤 Too slow!", "#ef476f");
+  if(p.familyId && G.families[p.familyId]) G.families[p.familyId].gone = true;
+  p.el.classList.add("leaving");
+  setTimeout(()=>p.el.remove(), 580);
+  updateHUD();
+  if(G.lost >= MAX_LOST) endGame(false, "5 passengers stormed off angry. The airport is in chaos!");
+}
+
+/* ---------- tick ---------- */
+function tick(){
+  if(!G.running || G.paused || G.over) return;
+  const dt = 0.1;
+  G.elapsed += dt;
+  // spawn
+  G.spawnT -= dt;
+  const interval = G.mode === "endless" ? Math.max(1.15, G.cfg.spawnEvery - G.elapsed/75) : G.cfg.spawnEvery;
+  if(G.spawnT <= 0){ spawnPax(); G.spawnT = interval * (0.75 + Math.random()*0.5); }
+  // passengers
+  for(const p of [...G.pax]){
+    p.age += dt; p.patience -= dt;
+    if(p.confused && !p.switched && p.age >= p.switchAt){
+      p.switched = true;
+      let nc; do { nc = Math.floor(Math.random()*G.cfg.gates); } while(nc === p.color);
+      p.color = nc;
+      p.el.innerHTML = personSVG(p) + '<span class="badge b-conf" style="background:#18b26b;">!</span>' +
+        '<span class="pbar"><i></i></span>' + (p.familyId ? '<span class="fam-note">family of 3</span>' : "");
+      p.el.setAttribute("aria-label", COLORS[nc].name + " ticket passenger");
+      if(G.selected === p) selectPax(p);
+      drawPaxBar(p);
+      sfx.pop();
+      floater(p.el, "Switched to " + COLORS[nc].name + "!", "#7b2ff7");
+    }
+    drawPaxBar(p);
+    if(p.patience <= 0){ paxStormOff(p); if(G.over) return; }
+  }
+  // gates
+  for(const g of G.gates){
+    if(g.away > 0){ g.away -= dt; if(g.away <= 0) drawGate(g); continue; }
+    g.timer -= dt;
+    const t = g.el.querySelector(".g-time"), bar = g.el.querySelector(".tbar i");
+    const f = Math.max(0, g.timer / g.maxTimer);
+    t.textContent = "⏱ " + Math.max(0, Math.ceil(g.timer)) + "s";
+    t.classList.toggle("low", g.timer <= 8);
+    bar.style.width = (f*100) + "%";
+    bar.classList.toggle("low", g.timer <= 8);
+    if(g.timer <= 0) departPlane(g);
+  }
+  drawHUDClock();
+}
+function drawHUDClock(){ /* score etc. updated on events; kept for future use */ }
+
+function updateHUD(){
+  $("#h-score").textContent = G.score;
+  $("#h-coins").textContent = G.coinsRun;
+  const c = $("#h-combo");
+  if(G.combo >= 2){ c.style.display = ""; $("#h-combo-n").textContent = (G.combo >= 8 ? 3 : G.combo >= 4 ? 2 : 1) + " · " + G.combo + " streak"; }
+  else c.style.display = "none";
+  $("#h-strikes").textContent = "🛫".repeat(MAX_WRONG - G.mistakes) + "✖".repeat(G.mistakes);
+  $("#h-strikes").title = "Wrong sends: " + G.mistakes + " / " + MAX_WRONG;
+  $("#h-lost").textContent = G.lost;
+  if(G.mode === "endless"){
+    $("#h-goal").textContent = "🎯 Endless — survive & score!";
+    $("#h-prog").style.width = "100%";
+  } else {
+    $("#h-goal").textContent = "🎯 Serve " + G.served + "/" + G.cfg.goalServe + " · Planes " + G.planesFull + "/" + G.cfg.goalPlanes;
+    const half = Math.min(1, G.served / G.cfg.goalServe) * 0.5 + Math.min(1, G.planesFull / G.cfg.goalPlanes) * 0.5;
+    $("#h-prog").style.width = (half*100) + "%";
+  }
+}
+
+function checkWin(){
+  if(G.mode === "endless" || G.over) return;
+  if(G.served >= G.cfg.goalServe && G.planesFull >= G.cfg.goalPlanes){
+    setTimeout(()=>{ if(!G.over) endGame(true); }, 650);
+  }
+}
+
+function endGame(won, reason){
+  if(G.over) return;
+  G.over = true; G.running = false;
+  clearInterval(G.tickInt); stopMusic();
+  selectPax(null);
+  let stars = 0;
+  if(won){
+    stars = (G.mistakes === 0 && G.lost <= 1) ? 3 : (G.mistakes <= 1 && G.lost <= 3) ? 2 : 1;
+    sfx.win();
+    const bonus = 25 + stars * 10;
+    G.coinsRun += bonus; profile.coins += bonus;
+    const r = $("#game-shell").getBoundingClientRect();
+    confetti(r.left + r.width/2, r.top + 120, 60);
+    if(G.mode === "level"){
+      profile.stars[G.levelN] = Math.max(profile.stars[G.levelN] || 0, stars);
+      profile.unlocked = Math.max(profile.unlocked, Math.min(LEVELS.length, G.levelN + 1));
+    }
+    if(G.mode === "daily"){
+      const today = new Date().toDateString();
+      if(profile.dailyDone !== today){ profile.dailyDone = today; profile.coins += 50; G.coinsRun += 50; }
+    }
+  } else {
+    sfx.lose();
+    if(G.mode === "endless") profile.bestEndless = Math.max(profile.bestEndless, G.score);
+  }
+  $("#res-title").textContent = won ? "Shift Complete! 🎉" : (G.mode === "endless" ? "Rush Over!" : "Shift Failed 😖");
+  $("#res-stars").innerHTML = won
+    ? '<span class="lit">' + "★".repeat(stars) + '</span><span class="dim">' + "★".repeat(3-stars) + '</span>'
+    : '<span class="dim">★★★</span>';
+  $("#res-msg").textContent = won
+    ? (G.mode === "daily" ? "Daily Challenge cleared — +50 coin bonus banked!" : G.mode === "endless" ? "" : "Goal smashed! " + (stars === 3 ? "Flawless shift — the airport runs like a dream." : stars === 2 ? "Great work, just a little turbulence." : "You made it — barely!"))
+    : (reason || "");
+  if(G.mode === "endless" && won === false) $("#res-msg").textContent = (reason || "") + " Final score: " + G.score + (G.score >= profile.bestEndless && G.score > 0 ? " — new personal best!" : "");
+  $("#res-score").textContent = G.score;
+  $("#res-coins").textContent = G.coinsRun;
+  $("#res-served").textContent = G.served;
+  $("#res-planes").textContent = G.planesFull;
+  $("#res-combo").textContent = G.bestCombo;
+  $("#res-lost").textContent = G.lost;
+  $("#btn-next").style.display = (won && G.mode === "level" && G.levelN < LEVELS.length) ? "" : "none";
+  setTimeout(()=> $("#ov-result").classList.add("on"), won ? 500 : 250);
+}
+
+function quitToHome(){
+  G.running = false; G.over = true; G.paused = false;
+  clearInterval(G.tickInt); stopMusic(); selectPax(null);
+  $("#ov-pause").classList.remove("on"); $("#ov-result").classList.remove("on"); $("#ov-intro").classList.remove("on");
+  renderHome(); show("screen-home");
+}
+
+/* ---------------- wiring ---------------- */
+$("#btn-play").addEventListener("click", ()=>{ ac(); const lv = LEVELS[Math.min(profile.unlocked, LEVELS.length) - 1]; openIntro("level", lv); });
+$("#btn-endless").addEventListener("click", ()=> openIntro("endless", null));
+$("#btn-daily").addEventListener("click", ()=> openIntro("daily", null));
+$("#btn-how").addEventListener("click", ()=> show("screen-how"));
+$("#btn-how-back").addEventListener("click", ()=>{ renderHome(); show("screen-home"); });
+$("#btn-start").addEventListener("click", ()=>{ ac(); startGame(); });
+$("#btn-intro-home").addEventListener("click", ()=>{ $("#ov-intro").classList.remove("on"); renderHome(); show("screen-home"); });
+$("#btn-pause").addEventListener("click", ()=>{ if(G.running && !G.over){ G.paused = true; $("#ov-pause").classList.add("on"); } });
+$("#btn-resume").addEventListener("click", ()=>{ G.paused = false; $("#ov-pause").classList.remove("on"); });
+$("#btn-restart").addEventListener("click", ()=>{ $("#ov-pause").classList.remove("on"); G.paused = false; startGame(); });
+$("#btn-quit").addEventListener("click", quitToHome);
+$("#btn-again").addEventListener("click", ()=>{ $("#ov-result").classList.remove("on"); startGame(); });
+$("#btn-next").addEventListener("click", ()=>{ $("#ov-result").classList.remove("on"); const nx = LEVELS[G.levelN]; if(nx) openIntro("level", nx); });
+$("#btn-res-home").addEventListener("click", quitToHome);
+$("#btn-mute").addEventListener("click", function(){
+  muted = !muted;
+  this.textContent = muted ? "🔇" : "🔊";
+  if(muted) stopMusic(); else if(G.running){ ac(); startMusic(); }
+});
+document.addEventListener("keydown", e=>{
+  if(e.key === "Escape" && G.running && !G.over){ G.paused = !G.paused; $("#ov-pause").classList.toggle("on", G.paused); }
+});
+
+renderHome();
+</script>
+</body>
+</html>
